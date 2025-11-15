@@ -1,158 +1,190 @@
+/* Layout / typography */
 :root {
-  --bg: #ffffff;
-  --text: #111827;
-  --muted: #6b7280;
-  --card: #ffffff;
-  --border: #e5e7eb;
-  --accent: #ff4d8d;
+  color-scheme: dark;
+  --bg: #050814;
+  --fg: #f7f7f7;
+  --muted: #a2acbb;
+
+  --color-departures: #e4572e; /* red-ish */
+  --color-arrivals: #2fbf71;   /* green-ish */
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0b1020;
-    --text: #f3f4f6;
-    --muted: #a3a6ad;
-    --card: #111827;
-    --border: #283044;
-    --accent: #ff7aa8;
-  }
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 html,
 body {
+  margin: 0;
+  padding: 0;
   height: 100%;
 }
 
 body {
-  font: 100%/1.5 system-ui, sans-serif;
+  font: 100%/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background: radial-gradient(circle at top, #10213a 0, #050814 40%, #020308 100%);
+  color: var(--fg);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  max-width: 80em;
+  max-width: 80rem;
   min-height: 100vh;
-  box-sizing: border-box;
-  margin: auto;
-  padding: 1em;
-  background: var(--bg);
-  color: var(--text);
+  margin: 0 auto;
+  padding: 1.5rem 1rem 2rem;
 }
 
-h1,
-h2,
-p {
+/* Header and slider */
+
+.page-header {
+  display: flex;
+  gap: 1.5rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+h1 {
+  font-size: clamp(1.8rem, 2.3vw + 1rem, 2.6rem);
   margin: 0;
 }
 
-header p {
+.subtitle {
+  margin: 0.4rem 0 0;
   color: var(--muted);
+  max-width: 38rem;
 }
 
-/* Map area */
-#map {
-  height: 70vh;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-/* Controls + Legend */
-.controls {
+.time-filter {
+  margin-left: auto;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-end;
+}
+
+.time-filter span:first-child {
+  font-weight: 500;
 }
 
 #time-slider {
-  width: 260px;
+  width: min(18rem, 55vw);
 }
 
-#time-label {
+#selected-time {
+  display: block;
   font-variant-numeric: tabular-nums;
-  margin-left: 0.25rem;
 }
 
-#anytime {
+#any-time {
+  display: block;
   color: var(--muted);
-  margin-left: 0.5rem;
+  font-style: italic;
 }
 
-.legend {
-  display: inline-grid;
-  grid-template-columns: repeat(3, auto);
-  gap: 0.75rem 1rem;
-  align-items: center;
+/* Map container */
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.legend .swatch {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-}
-
-/* Tooltip (optional) */
-dl.info {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.25rem 0.75rem;
-  margin: 0;
-  padding: 0.75rem 0.9rem;
+#map {
+  position: relative;
+  width: 100%;
+  height: min(70vh, 34rem);
   border-radius: 0.75rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-  background: color-mix(in oklch, var(--card) 92%, transparent);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  transition: 300ms;
-  border: 1px solid var(--border);
+  overflow: hidden;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
 }
 
-dl.info dt {
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-size: 0.75rem;
+/* Mapbox canvas fills the container */
+#map > .mapboxgl-map,
+#map canvas {
+  border-radius: inherit;
 }
 
-dl.info.tooltip {
-  position: fixed;
-  top: 1em;
-  left: 1em;
+/* SVG overlay */
+#map svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Let map interactions pass through */
 }
 
-dl.info[hidden]:not(:hover, :focus-within) {
-  opacity: 0;
-  visibility: hidden;
-}
+/* Station circles */
 
-/* Station circles in SVG overlay */
-svg circle {
-  fill: steelblue;
+#map svg circle {
+  pointer-events: auto; /* re-enable for tooltips */
+  stroke: #ffffff;
+  stroke-width: 1;
   fill-opacity: 0.6;
-  stroke: #fff;
-  stroke-width: 1.2;
-  transition: 200ms;
+  transition: transform 160ms ease-out, fill-opacity 160ms ease-out;
   transform-origin: center;
   transform-box: fill-box;
-  pointer-events: auto;
+
+  /* color from traffic flow; these vars also used by legend */
+  --color: color-mix(
+    in oklch,
+    var(--color-departures) calc(100% * var(--departure-ratio, 0.5)),
+    var(--color-arrivals)
+  );
+  fill: var(--color);
 }
 
-svg circle:hover {
-  transform: scale(1.25);
+#map svg circle:hover {
+  transform: scale(1.35);
   fill-opacity: 1;
 }
 
-/* Optional brushing selection style if you add brushes later */
-@keyframes marching-ants {
-  to {
-    stroke-dashoffset: -8;
-  }
+/* Legend */
+
+.legend {
+  margin-block: 0.25rem 0;
+  align-self: flex-end;
+  text-align: right;
+  color: var(--muted);
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
-.selection {
-  fill-opacity: 0.08;
-  stroke: black;
-  stroke-opacity: 0.7;
-  stroke-dasharray: 5 3;
-  animation: marching-ants 2s linear infinite;
+.legend-title {
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.legend-items {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.legend-items > div {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  --color: color-mix(
+    in oklch,
+    var(--color-departures) calc(100% * var(--departure-ratio, 0.5)),
+    var(--color-arrivals)
+  );
+}
+
+.legend-items .swatch {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 999px;
+  background: var(--color);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+/* Range input basic tweak (optional) */
+input[type="range"] {
+  accent-color: #2f7dff;
 }
